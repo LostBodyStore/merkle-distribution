@@ -9,13 +9,12 @@ const fs = require('fs');
 const path = require('path');
 const { assert } = require('console');
 
-class DropSettings {
-    fileLatest = './src/.latest';
-    static pathQr = './src/qr';
-    static pathTestQr = './src/test_qr';
-    pathZip = './src/gendata';
+class AbstractDropSettings {
+    constructor(flagSaveQr, flagSaveLink, codeCounts, codeAmounts, version, chainId, flagNoVersionUpdate = false) {
+        if (new.target === AbstractDropSettings) {
+            throw new Error("Cannot instantiate an abstract class.");
+        }
 
-    constructor (flagSaveQr, flagSaveLink, codeCounts, codeAmounts, version, chainId, flagNoVersionUpdate = false) {
         this.flagSaveQr = flagSaveQr;
         this.flagSaveLink = flagSaveLink;
         this.flagNoDeploy = flagNoVersionUpdate;
@@ -23,11 +22,25 @@ class DropSettings {
         this.codeAmounts = codeAmounts;
         this.version = version;
         this.chainId = chainId;
-        this.fileLinks = `./src/gendata/${version}-qr-links.json`;
+
+        // Derived paths using the abstract root path
+        this.fileLatest = `${this.constructor.root}/.latest`;
+        this.pathQr = `${this.constructor.root}/qr`;
+        this.pathTestQr = `${this.constructor.root}/test_qr`;
+        this.pathZip = `${this.constructor.root}/gendata`;
+        this.fileLinks = `${this.pathZip}/${version}-qr-links.json`;
         this.prefix = `https://app.1inch.io/#/${chainId}/qr?`;
-        // Copy static properties to the instance
-        this.pathQr = DropSettings.pathQr;
-        this.pathTestQr = DropSettings.pathTestQr;
+    }
+
+    // Abstract getter for the root path (should be overridden by subclasses)
+    static get root() {
+        throw new Error("Subclasses must define a root path.");
+    }
+}
+
+class DropSettings extends AbstractDropSettings {
+    static get root() {
+        return './src';
     }
 }
 
@@ -220,5 +233,6 @@ module.exports = {
     generateCodes: main,
     verifyLink,
     createNewDropSettings,
+    AbstractDropSettings,
     DropSettings,
 };
